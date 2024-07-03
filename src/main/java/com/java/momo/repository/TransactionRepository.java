@@ -1,9 +1,9 @@
 package com.java.momo.repository;
 
-import com.java.momo.entity.Product;
+import com.java.momo.entity.Transaction;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ProductRepository extends MongoRepository<Product, String> {
+public interface TransactionRepository extends MongoRepository<Transaction, String> {
 }

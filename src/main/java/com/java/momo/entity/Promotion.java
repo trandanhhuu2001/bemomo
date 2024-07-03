@@ -16,5 +16,6 @@ public class Promotion {
     private String description;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
-    private List<String> productIds; // Danh sách các productId áp dụng khuyến mãi
+    private List<String> productIds;
+    private  int usageCount;
 }

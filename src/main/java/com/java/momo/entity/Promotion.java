@@ -19,4 +19,5 @@ public class Promotion {
     private Date endDate;
     private List<String> productIds;
     private  int usageCount;
+    private double budget;
 }

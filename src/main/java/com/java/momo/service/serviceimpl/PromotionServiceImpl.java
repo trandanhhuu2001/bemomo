@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class PromotionServiceImpl implements PromotionService {
     private final DateProvider dateProvider;
-
     private final ProductRepository productRepository;
     private final PromotionRepository promotionRepository;
     private final TransactionRepository transactionRepository;
@@ -34,29 +33,28 @@ public class PromotionServiceImpl implements PromotionService {
         LocalDate today = dateProvider.getToday();
         LocalDate yesterday = dateProvider.getToday().minusDays(1);
         Promotion promotionToday = new Promotion();
+        List<Product> productList = productRepository.findAll();
         Optional<Promotion> promotionOptional = promotionRepository.findByStartDate(today);
         promotionToday = promotionOptional.get();
+        Double bugdet = promotionToday.getBudget();
         List<Transaction> transactionList = transactionRepository.findAll().stream()
                 .filter(transaction -> isTransactionOnDate(transaction, today))
                 .collect(Collectors.toList());
-        for (ProductResponse product : products) {
-            if (product.getQuantity() >= 3) {
-                Boolean check = true;
-                for (int i = 0; i < transactionList.size(); i++){
-                    // Kiểm tra 10 giao dịch gần nhất đã có khuyến mãi chưa
-                    if(transactionList.get(i).isReceivedPromotion())
-                        check = false;
-                }
-                // Nếu chưa có thì ramdom khuyến mãi
-                if(check == true){
-                    Random random = new Random();
+        if(bugdet > 0){
+            for (ProductResponse product : products) {
+                if (product.getQuantity() >= 3) {
+                    Boolean checkPromotion = isRecentTransaction(transactionList, promotionToday.getUsageCount());
+                    if(checkPromotion == false && transactionList.size() < 10){
+                        // Kiểm tra nếu chưa có lần nào khuyến mãi thì random lần mua đó được khuyến mãi
+                        Random random = new Random();
                         if(random.nextDouble() <= 0.1){
-                           // Ngẫu nhiên lần đó có được khuyến mãi không
+                            // Xác xuất lần đó nhận là 10%
+                            findRandomPromotion(productList,bugdet);
                         }
-                }
-                //Nếu chưa có lần nào thì lần thứ 10 chắc chắn được khuyến mãi
-                if(check == false){
-
+                    }
+                    if(checkPromotion == false && transactionList.size() == 10){
+                        findRandomPromotion(productList,bugdet);
+                    }
                 }
             }
         }
@@ -66,6 +64,29 @@ public class PromotionServiceImpl implements PromotionService {
     private boolean isTransactionOnDate(Transaction transaction, LocalDate date) {
         LocalDate transactionDate = transaction.getTimestamp().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         return transactionDate.equals(date);
+    }
+    private boolean isRecentTransaction(List<Transaction> transactionList,int usageCount){
+        Boolean check = true;
+        for (int i = usageCount*10; i < transactionList.size(); i++){
+            // Kiểm tra 10 giao dịch gần nhất đã có khuyến mãi chưa
+            if(transactionList.get(i).isReceivedPromotion())
+                check = false;
+        }
+        return check;
+    }
+    private  Product findRandomPromotion(List<Product> products, double threshold){
+        if (products == null || products.isEmpty()) {
+            return null;
+        }
+        List<Product> eligibleProducts = products.stream()
+                .filter(product -> product.getPrice() < threshold)
+                .toList();
+        if (eligibleProducts.isEmpty()) {
+            return null;
+        }
+        Random random = new Random();
+        int randomIndex = random.nextInt(eligibleProducts.size());
+        return eligibleProducts.get(randomIndex);
     }
 }
 
